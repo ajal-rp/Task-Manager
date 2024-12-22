@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using Spectre.Console;
 
 class Program
 {
@@ -11,6 +12,8 @@ class Program
         public int Id { get; set; }
         public required string Title { get; set; }
         public required string Description { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public DateTime LastUpdated { get; set; }
     }
 
     // In-memory task list
@@ -19,33 +22,42 @@ class Program
 
     static void Main(string[] args)
     {
-        Console.WriteLine("Welcome to Task Manager CLI!");
+        // Welcome banner
+        AnsiConsole.Write(
+            new FigletText("Task Manager")
+                .Centered()
+                .Color(Color.Green));
+
         string? command;
 
         do
         {
-            Console.Write("\nEnter a command (add, view, update, delete, exit): ");
-            command = Console.ReadLine()?.Trim().ToLower();
+            // Main menu prompt
+            command = AnsiConsole.Prompt(
+                new SelectionPrompt<string>()
+                    .Title("[bold cyan]Choose a command[/]:")
+                    .AddChoices("Add Task", "View Tasks", "Update Task", "Delete Task", "Exit")
+            ).ToLower();
 
             switch (command)
             {
-                case "add":
+                case "add task":
                     AddTask();
                     break;
-                case "view":
+                case "view tasks":
                     ViewTasks();
                     break;
-                case "update":
+                case "update task":
                     UpdateTask();
                     break;
-                case "delete":
+                case "delete task":
                     DeleteTask();
                     break;
                 case "exit":
-                    Console.WriteLine("Exiting Task Manager. Goodbye!");
+                    AnsiConsole.MarkupLine("[bold red]Exiting Task Manager. Goodbye![/]");
                     break;
                 default:
-                    Console.WriteLine("Invalid command. Try again.");
+                    AnsiConsole.MarkupLine("[bold yellow]Invalid command. Try again.[/]");
                     break;
             }
         } while (command != "exit");
@@ -54,21 +66,24 @@ class Program
     // Add a new task
     static void AddTask()
     {
-        Console.Write("Enter task title: ");
-        string? title = Console.ReadLine();
+        var title = AnsiConsole.Prompt(
+            new TextPrompt<string>("Enter the [bold green]task title[/]:").PromptStyle("green"));
 
-        Console.Write("Enter task description: ");
-        string? description = Console.ReadLine();
+        var description = AnsiConsole.Prompt(
+            new TextPrompt<string>("Enter the [bold green]task description[/]:").PromptStyle("green"));
 
         var task = new Task
         {
             Id = nextId++,
             Title = title,
-            Description = description
+            Description = description,
+            CreatedAt = DateTime.Now,
+            LastUpdated = DateTime.Now
         };
+
         tasks.Add(task);
 
-        Console.WriteLine($"New task added with ID {task.Id}.");
+        AnsiConsole.MarkupLine($"[bold green]Task ID {task.Id} added successfully![/]");
     }
 
     // View all tasks
@@ -76,80 +91,91 @@ class Program
     {
         if (tasks.Count == 0)
         {
-            Console.WriteLine("There are no tasks.");
+            AnsiConsole.MarkupLine("[bold yellow]No tasks available.[/]");
             return;
         }
 
-        const int idWidth = 5;
-        const int titleWidth = 20;
-        const int descriptionWidth = 30;
-
-        Console.WriteLine(new string('-', idWidth + titleWidth + descriptionWidth + 10)); // Adjust for separators and spaces
-        Console.WriteLine($"| {"ID",-idWidth} | {"Title",-titleWidth} | {"Description",-descriptionWidth} |");
-        Console.WriteLine(new string('-', idWidth + titleWidth + descriptionWidth + 10));
-
+        var table = new Table()
+            .Border(TableBorder.Rounded)
+            .AddColumn("[bold yellow]ID[/]")
+            .AddColumn("[bold yellow]Title[/]")
+            .AddColumn("[bold yellow]Description[/]")
+            .AddColumn("[bold yellow]Created At[/]")
+            .AddColumn("[bold yellow]Last Updated[/]");
 
         foreach (var task in tasks)
         {
-            Console.WriteLine($"| {task.Id,-idWidth} | {task.Title,-titleWidth} | {task.Description,-descriptionWidth} |");
+            table.AddRow(
+                task.Id.ToString(),
+                task.Title,
+                task.Description,
+                task.CreatedAt.ToString("g"),
+                task.LastUpdated.ToString("g")
+            );
         }
 
-        Console.WriteLine(new string('-', idWidth + titleWidth + descriptionWidth + 10));
+        AnsiConsole.Write(table);
     }
-
 
     // Update a task
     static void UpdateTask()
     {
-        Console.Write("Enter task ID to update: ");
-        if (!int.TryParse(Console.ReadLine(), out int id))
-        {
-            Console.WriteLine("Invalid ID.");
-            return;
-        }
+        var id = AnsiConsole.Prompt(
+            new TextPrompt<int>("Enter the [bold cyan]Task ID[/] to update:").PromptStyle("cyan"));
 
         var task = tasks.Find(t => t.Id == id);
         if (task == null)
         {
-            Console.WriteLine("Task not found.");
+            AnsiConsole.MarkupLine("[bold red]Task not found.[/]");
             return;
         }
 
-        Console.Write("Enter new title (leave blank to keep current): ");
-        string? title = Console.ReadLine();
+        var title = AnsiConsole.Prompt(
+            new TextPrompt<string>("Enter the new [bold green]task title[/] (leave blank to keep current):")
+                .PromptStyle("green")
+                .AllowEmpty());
+
         if (!string.IsNullOrWhiteSpace(title))
         {
             task.Title = title;
         }
 
-        Console.Write("Enter new description (leave blank to keep current): ");
-        string? description = Console.ReadLine();
+        var description = AnsiConsole.Prompt(
+            new TextPrompt<string>("Enter the new [bold green]task description[/] (leave blank to keep current):")
+                .PromptStyle("green")
+                .AllowEmpty());
+
         if (!string.IsNullOrWhiteSpace(description))
         {
             task.Description = description;
         }
 
-        Console.WriteLine($"Task ID {id} updated.");
+        task.LastUpdated = DateTime.Now;
+        AnsiConsole.MarkupLine($"[bold green]Task ID {id} updated successfully![/]");
     }
 
     // Delete a task
     static void DeleteTask()
     {
-        Console.Write("Enter task ID to delete: ");
-        if (!int.TryParse(Console.ReadLine(), out int id))
-        {
-            Console.WriteLine("Invalid ID.");
-            return;
-        }
+        var id = AnsiConsole.Prompt(
+            new TextPrompt<int>("Enter the [bold red]Task ID[/] to delete:").PromptStyle("red"));
 
         var task = tasks.Find(t => t.Id == id);
         if (task == null)
         {
-            Console.WriteLine("Task not found.");
+            AnsiConsole.MarkupLine("[bold red]Task not found.[/]");
             return;
         }
 
-        tasks.Remove(task);
-        Console.WriteLine($"Task ID {id} deleted.");
+        var confirm = AnsiConsole.Confirm($"Are you sure you want to delete Task ID [bold red]{id}[/]?");
+        if (confirm)
+        {
+            tasks.Remove(task);
+            AnsiConsole.MarkupLine($"[bold green]Task ID {id} deleted successfully![/]");
+        }
+        else
+        {
+            AnsiConsole.MarkupLine("[bold yellow]Task deletion canceled.[/]");
+        }
     }
 }
