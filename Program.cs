@@ -24,9 +24,15 @@ class Program
     {
         // Welcome banner
         AnsiConsole.Write(
-            new FigletText("Task Manager CLI By AJAL R P")
+            new FigletText("Task Manager CLI")
                 .Centered()
                 .Color(Color.Green));
+
+        // Develoepr stamp
+        AnsiConsole.Write(
+            new FigletText("By AJAL R P")
+                .Centered()
+                .Color(Color.Red));
 
         string? command;
 
