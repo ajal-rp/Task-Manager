@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json;
 using Spectre.Console;
 
 class Program
@@ -20,8 +21,13 @@ class Program
     static List<Task> tasks = new List<Task>();
     static int nextId = 1;
 
+    // using Json file to save task permanantly
+    static string filePath = "tasks.json";
+
     static void Main(string[] args)
     {
+        LoadTasks();
+        
         // Welcome banner
         AnsiConsole.Write(
             new FigletText("Task Manager CLI")
@@ -60,6 +66,7 @@ class Program
                     DeleteTask();
                     break;
                 case "exit":
+                    SaveTask();
                     AnsiConsole.MarkupLine("[bold red]Exiting Task Manager. Goodbye![/]");
                     break;
                 default:
@@ -88,7 +95,7 @@ class Program
         };
 
         tasks.Add(task);
-
+        SaveTask();
         AnsiConsole.MarkupLine($"[bold green]Task ID {task.Id} added successfully![/]");
     }
 
@@ -157,6 +164,7 @@ class Program
         }
 
         task.LastUpdated = DateTime.Now;
+        SaveTask();
         AnsiConsole.MarkupLine($"[bold green]Task ID {id} updated successfully![/]");
     }
 
@@ -177,11 +185,29 @@ class Program
         if (confirm)
         {
             tasks.Remove(task);
+            SaveTask();
             AnsiConsole.MarkupLine($"[bold green]Task ID {id} deleted successfully![/]");
         }
         else
         {
             AnsiConsole.MarkupLine("[bold yellow]Task deletion canceled.[/]");
+        }
+    }
+
+    // save task to json file
+    static void SaveTask()
+    {
+        var jsonData = JsonSerializer.Serialize(tasks, new JsonSerializerOptions { WriteIndented = true });
+        File.WriteAllText(filePath, jsonData);
+    }
+
+    static void LoadTasks()
+    {
+        if (File.Exists(filePath))
+        {
+            var jsonData = File.ReadAllText(filePath);
+            tasks = JsonSerializer.Deserialize<List<Task>>(jsonData) ?? new List<Task>();
+            nextId = tasks.Count > 0 ? tasks[^1].Id + 1 : 1; // Set nextId based on the last task
         }
     }
 }
