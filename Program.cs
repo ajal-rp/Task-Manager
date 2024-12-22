@@ -27,7 +27,7 @@ class Program
     static void Main(string[] args)
     {
         LoadTasks();
-        
+
         // Welcome banner
         AnsiConsole.Write(
             new FigletText("Task Manager CLI")
@@ -67,7 +67,7 @@ class Program
                     break;
                 case "exit":
                     SaveTask();
-                    AnsiConsole.MarkupLine("[bold red]Exiting Task Manager. Goodbye![/]");
+                    AnsiConsole.MarkupLine("[bold red]Exiting Task Manager.:person_raising_hand: Goodbye![/]");
                     break;
                 default:
                     AnsiConsole.MarkupLine("[bold yellow]Invalid command. Try again.[/]");
